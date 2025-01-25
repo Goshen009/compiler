@@ -1,0 +1,7 @@
+let a: Number = 90;
+
+let b: String = "Hallo";
+
+const c: []UserDefined = [XYZ, OOP];
+
+let (d: Number, e: String, f:UserDefined) = (90, "Welcome", POP);

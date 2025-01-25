@@ -1,0 +1,112 @@
+use regex::Regex;
+use super::errorq::LexerErrorTypes;
+
+pub mod tokens;
+pub mod objects;
+mod patterns;
+mod handlers;
+
+use tokens::*;
+use objects::*;
+
+/* NO SUPPORT FOR MULTI-LINE STRINGS! WILL DO LATER */
+/* MAYBE USE A DIFFERENT REGEX? OR ADAPT MULTIPLE LINES? */
+
+pub fn lex(src_code: String) {
+    let mut lexer = Lexer::new(src_code.lines().peekable());
+
+    lex_tokens(&mut lexer);
+
+    if lexer.completed_without_errors() { // moves on to the parser
+        super::parse((lexer.tokens, lexer.errors));
+    }
+}
+
+fn lex_tokens(lexer: &mut Lexer) {
+    if lexer.curr_position.column == lexer.src_line.len() { // to move the next line in the source code and if there are no more lines, add an EOF and stop the recursion.
+        if lexer.has_next_line() {
+            lexer.initialize_new_line();
+        } else {
+            lexer.add_token(TokenObject::new(Token::EOF, lexer.curr_position));
+            return;
+        }
+    }
+
+    let haystack = &lexer.src_line[lexer.curr_position.column..];
+    let mut found_match = false;
+
+    for pattern in patterns::PATTERNS {
+        let regex = Regex::new(pattern.pattern).unwrap();
+
+        if regex.is_match(haystack) {
+            found_match = true;
+
+            if pattern.token == Token::COMMENT { // if it's a comment, skip everything on that line.
+                lexer.initialize_new_line();
+                break;
+            }
+
+            let matched = regex.captures(haystack).unwrap().get(0).unwrap();
+            let token_object = TokenObject::new(pattern.token, lexer.curr_position);            
+
+            lexer.curr_position.column += matched.end();
+
+            let matched_word = matched.as_str().trim();
+            let token = (pattern.handler)(token_object, matched_word);
+        
+            lexer.add_token(token);
+            break;
+        }
+    }
+
+    if !found_match && !lexer.src_line.is_empty() { // we'll get the next space character. That'll tell us the position at which the error word stops.
+        let next_whitespace = haystack.find(|c: char| c.is_whitespace());
+        let foreign_word;
+
+        if let Some(index) = next_whitespace {
+            foreign_word = &haystack[..index];
+        } else {
+            foreign_word = haystack;
+        }
+
+        lexer.errors.add_error(LexerErrorTypes::Match_Not_Found { value: foreign_word.to_string(), index: lexer.get_current_index() });
+        lexer.add_token(TokenObject::new(Token::ERROR, lexer.curr_position));
+
+        lexer.curr_position.column += foreign_word.len();
+    }
+
+    lex_tokens(lexer);
+}
+
+pub fn default_handler(token_object: TokenObject, _matched_string: &str) -> TokenObject {
+    return token_object;
+}
+
+pub fn number_handler(mut token_object: TokenObject, matched_string: &str) -> TokenObject {
+    let value = matched_string.parse().unwrap();
+    
+    token_object.update_token_value(TokenValue::Number(value));
+    return token_object;
+}
+
+pub fn string_handler(mut token_object: TokenObject, matched_string: &str) -> TokenObject {
+    let len = matched_string.len() - 1;
+    let value = &matched_string[1..len]; // to remove the "" around strings
+
+    token_object.update_token_value(TokenValue::String(value.to_string()));
+    return token_object;
+}
+
+pub fn symbol_or_keyword_handler(mut token_object: TokenObject, matched_string: &str) -> TokenObject {
+    for keyword in patterns::KEYWORDS {
+        let regex = Regex::new(keyword.pattern).unwrap();
+
+        if regex.is_match(matched_string) {
+            return TokenObject::new(keyword.token, token_object.get_position());
+        }
+    }
+
+    let value = matched_string.to_string();
+    token_object.update_token_value(TokenValue::String(value));
+    return token_object;
+}
