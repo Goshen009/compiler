@@ -60,3 +60,34 @@ let (a:Number, b: String) = (45, "Red");
 let (d:Number, f: Number) = y;
 
 let (g:Number) = 90;
+
+
+
+
+// tade.main();
+
+"Single line string"
+
+"Tade is a 
+
+fish
+
+monkey king         tes ";
+
+
+
+
+
+
+ 
+
+
+
+
+struct main {
+
+}
+
+monk here (tx:type, power:pde) -> (Number, ) { ^&
+ 
+}

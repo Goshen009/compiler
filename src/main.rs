@@ -21,34 +21,37 @@ use parser_::*;
 fn main() {
     let src = get_source_code(FILEPATH);
 
-    lex(src); // it calls into the parser.
+    // lex(src); // it calls into the parser.
+
+    parse(src);
+
+    // let x = "line now no ";
+
+    // let mut lines = x.lines().rev();
+    
+    // let last = lines.next().unwrap().len();
+    // println!("last: {}", last);
+
+    // let lenght = lines.count();
+    // println!("lenght: {lenght}");
 
 
     println!("\n\nDO FOR LET! DO FOR TUPLE! FINISH FOR STRUCT!");
     println!("The syntax checking I mean!");
 }
 
-pub fn get_source_code(filepath: &str) -> std::iter::Peekable<std::vec::IntoIter<String>> {
-    // we'll read the source code line by line as opposed to reading the full thing at once.
-    // why? I want to eliminate copying strings in the lexer. And checking for regex line by line will be much quicker when a match is not found as opposed to checking full file for a match.
+pub fn get_source_code(filepath: &str) -> String {
+    let file = std::fs::read_to_string(filepath);
+    let contents = match file {
+        Ok(file_contents) => file_contents,
+        Err(error) => {
+            println!("Error: {}", error);
+            println!("Defaulting to boilerplate code");
+            String::from("10 * 5 + 2")
+        }
+    };
 
-    use std::io::BufRead;
-    
-    let file = std::fs::File::open(filepath);
-    if file.is_err() {
-        panic!("Error reading source code! Please check the file path.");
-    } else {
-        let reader = std::io::BufReader::new(file.unwrap());
-        let line: Vec<String> = reader.lines().filter_map(|line| {
-            match line {
-                Ok(valid_line) => Some(valid_line),
-                Err(e) => panic!("Error turning source code into lines: {e}")
-            }
-        }).collect();
-
-        // returns an iterator over the lines.
-        return line.into_iter().peekable();
-    }
+    contents
 }
 
 // fn main() {
@@ -84,7 +87,28 @@ pub fn get_source_code(filepath: &str) -> std::iter::Peekable<std::vec::IntoIter
 
 
 
+// pub fn get_source_code(filepath: &str) -> std::iter::Peekable<std::vec::IntoIter<String>> {
+//     // we'll read the source code line by line as opposed to reading the full thing at once.
+//     // why? I want to eliminate copying strings in the lexer. And checking for regex line by line will be much quicker when a match is not found as opposed to checking full file for a match.
 
+//     use std::io::BufRead;
+    
+//     let file = std::fs::File::open(filepath);
+//     if file.is_err() {
+//         panic!("Error reading source code! Please check the file path.");
+//     } else {
+//         let reader = std::io::BufReader::new(file.unwrap());
+//         let line: Vec<String> = reader.lines().filter_map(|line| {
+//             match line {
+//                 Ok(valid_line) => Some(valid_line),
+//                 Err(e) => panic!("Error turning source code into lines: {e}")
+//             }
+//         }).collect();
+
+//         // returns an iterator over the lines.
+//         return line.into_iter().peekable();
+//     }
+// }
 
 // pub fn get_source_code(filepath: &str) -> String {
 //     let file = std::fs::read_to_string(filepath);

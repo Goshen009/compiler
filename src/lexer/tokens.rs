@@ -1,9 +1,9 @@
-use super::{Position, handlers::*};
+use super::Position;
 
 #[derive(Clone)]
 pub struct TokenObject {
     token: Token,
-    value: TokenValue,
+    value: Option<TokenValue>, // i'm using option because i want to move out of it
     position: Position,
 }
 
@@ -11,21 +11,24 @@ impl TokenObject {
     pub fn new(token: Token, position: Position) -> Self {
         Self {
             token,
-            value: TokenValue::None,
+            value: Some(TokenValue::None),
             position,
         }
     }
 
-    pub fn print_self(&self) {
-        match self.get_value() {
-            TokenValue::None => println!("{:<35} (line: {}, column: {})", format!("{:?}", self.get_token()), self.get_position().line, self.get_position().column),
-            TokenValue::Number(val) => println!("{:<35} (line: {}, column: {})", format!("{:?}({})", self.get_token(), val), self.get_position().line, self.get_position().column),
-            TokenValue::String(val) => println!("{:<35} (line: {}, column: {})", format!("{:?}({})", self.get_token(), val), self.get_position().line, self.get_position().column),
+    pub fn print_self(&mut self) { // moves out of token value, does the checks and moves back in.
+        let token_value = self.take_value();
+        match &token_value {
+            TokenValue::None => println!("{:<35} {}", format!("{:?}", self.get_token()), self.get_position()),
+            TokenValue::Number(val) => println!("{:<35} {}", format!("{:?}({})", self.get_token(), val), self.get_position()),
+            TokenValue::String(val) => println!("{:<35} {}", format!("{:?}({})", self.get_token(), val), self.get_position()),
         }
+
+        self.update_token_value(token_value);
     }
 
     pub fn update_token_value(&mut self, value: TokenValue) {
-        self.value = value;
+        self.value = Some(value);
     }
 
     pub fn update_token(&mut self, token: Token) {
@@ -40,8 +43,8 @@ impl TokenObject {
         self.position
     }
 
-    pub fn get_value(&self) -> &TokenValue {
-        &self.value
+    pub fn take_value(&mut self) -> TokenValue {
+        self.value.take().unwrap()
     }
 }
 
@@ -62,7 +65,7 @@ impl TokenValue {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Token {
     STRING,         // string
     SYMBOL,         // var_names
@@ -70,9 +73,14 @@ pub enum Token {
 
     FUNCTION_NAME,
     FUNCTION_PARAMETER,
+    FUNCTION_OPEN_CURLY,
+    FUNCTION_RETURN_TYPE,
+    FUNCTION_OPEN_BRACKETS,
     FUNCTION_PARAMETER_TYPE,
+    FUNCTION_RETURN_OPEN_BRACKETS,
 
     STRUCT_NAME,
+    STRUCT_FIELD,
 
     PLUS_ASSIGN,    // +=
     MINUS_ASSIGN,   // -=
@@ -122,6 +130,7 @@ pub enum Token {
     START,
     SPACE,
     COMMENT,
+    NEW_LINE,
     ERROR,
     EOF,
 }
@@ -129,21 +138,27 @@ pub enum Token {
 type TokenSyntaxHandler = fn(Token, &mut TokenObject, &mut super::Lexer);
 
 impl Token {
+    pub const fn as_u8(self) -> u8 {
+        self as u8
+    }
+
     pub const fn get_syntax_check_handler(&self) -> Option<TokenSyntaxHandler> {
         match *self {
             Token::START | Token::ERROR => None,
 
-            Token::STRUCT => Some(struct_statement_handlers::struct_syntax_check),
-            Token::STRUCT_NAME => Some(struct_statement_handlers::struct_name_syntax_check),
+            // Token::STRUCT => Some(struct_statement_handlers::struct_syntax_check),
+            // Token::STRUCT_NAME => Some(struct_statement_handlers::struct_name_syntax_check),
 
-            Token::MONK => Some(function_statement_handlers::function_decl_syntax_check),
-            Token::FUNCTION_NAME => Some(function_statement_handlers::function_name_syntax_check),
-            Token::FUNCTION_PARAMETER => Some(function_statement_handlers::function_parameter_syntax_check),
-            Token::FUNCTION_PARAMETER_TYPE => Some(function_statement_handlers::function_parameter_type_syntax_check),
+            // Token::MONK => Some(function_statement_handlers::function_decl_syntax_check),
+            // Token::FUNCTION_NAME => Some(function_statement_handlers::function_name_syntax_check),
+            // Token::FUNCTION_PARAMETER => Some(function_statement_handlers::function_parameter_syntax_check),
+            // Token::FUNCTION_PARAMETER_TYPE => Some(function_statement_handlers::function_parameter_type_syntax_check),
 
-            Token::OPEN_BRACKET => Some(open_bracket_syntax_check),
-            Token::COLON => Some(colon_syntax_check),
-            Token::COMMA => Some(comma_syntax_check),
+            // Token::OPEN_CURLY => Some(open_curly_syntax_check),
+            // Token::OPEN_BRACKET => Some(open_bracket_syntax_check),
+
+            // Token::COLON => Some(colon_syntax_check),
+            // Token::COMMA => Some(comma_syntax_check),
 
             _ => None,
         }
@@ -151,7 +166,7 @@ impl Token {
 
     pub const fn is_grouping_open(&self) -> bool {
         match self {
-            Token::OPEN_BRACKET | Token:: OPEN_CURLY | Token::OPEN_SQUARE => true,
+            Token::OPEN_BRACKET | Token:: OPEN_CURLY | Token::OPEN_SQUARE | Token::FUNCTION_OPEN_BRACKETS => true,
             _ => false
         }
     }
@@ -163,20 +178,20 @@ impl Token {
         }
     }
 
-    pub const fn is_end_statement(&self) -> bool {
+    pub const fn can_start_new_statement(&self) -> bool {
         match self {
-            Token::START | Token::CLOSE_CURLY | Token::SEMICOLON => true,
+            Token::START | Token::OPEN_CURLY | Token::CLOSE_CURLY | Token::SEMICOLON => true,
             _ => false
         }
     }
 
-    pub const fn is_start_statement(&self) -> bool {
-        match self {
-            Token::LET | Token::SYMBOL | Token::STRUCT | Token::MONK => true,
-            Token::CONST | Token::RETURN | Token::SCREAM | Token::IF | Token::ELSE => true,
-            _ => false
-        }
-    }
+    // pub const fn is_start_statementss(&self) -> bool {
+    //     match self {
+    //         Token::LET | Token::SYMBOL | Token::STRUCT | Token::MONK => true,
+    //         Token::CONST | Token::RETURN | Token::SCREAM | Token::IF | Token::ELSE => true,
+    //         _ => false
+    //     }
+    // }
 }
 
 impl std::fmt::Display for Token {

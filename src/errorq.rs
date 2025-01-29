@@ -1,39 +1,35 @@
-use super::lexer::{objects::{Position, Lexer}, tokens::Token};
+use super::lexer::{objects::Position, tokens::Token};
 
 #[allow(non_camel_case_types)]
 #[derive(Debug)]
-pub enum LexerErrorTypes{ // the 'usize' refers to the index of the token that logged the error.
-    Match_Not_Found {
-        value: String,
-        index: usize,
-    },
+pub enum LexerErrorTypes<'a>{ // the 'usize' refers to the index of the token that logged the error.
+    Expects_Type,
+    Expects_Name,
 
-    Colon_Expected(usize),
-    Open_Curly_Expected(usize),
-    Colon_Or_Close_Bracket_Expected(usize),
+    Expects_Token(&'a str),
+    Expects_Two_Tokens(&'a str, &'a str),
 
-    Struct_Expects_Symbol_Ahead(usize),
-    Struct_Expects_End_Statement_Behind(usize),
-    Struct_Name_Expects_Open_Curly_In_Front(usize),
+    Unexpected_Token(&'a str),
+}
 
-    Expected_Type_For_Parameter(usize),
-    Function_Expects_Symbol_Ahead(usize),
-    Function_Expects_End_Statement_Behind(usize),
-    Function_Name_Expects_Open_Bracket_In_Front(usize),
-    Function_Expects_Symbol_As_Its_Parameter(usize),
+pub fn get_error_string(err_type: LexerErrorTypes, position: Position) -> String {
+    match err_type {
+        LexerErrorTypes::Expects_Token(token) => format!("Expected '{token}' at {position}"),
+        LexerErrorTypes::Expects_Two_Tokens(token1, token2) => format!("Expected '{token1}' or '{token2}' at {position}"),
 
-    Opened_Grouping_That_Was_Never_Closed(usize),
-    Closed_Grouping_That_Was_Never_Opened(usize),
+        LexerErrorTypes::Unexpected_Token(token) => format!("Unexpected token '{token}' at {position}"),
 
-    Started_String_That_Was_Never_Ended(Position),
+        LexerErrorTypes::Expects_Name => format!("Expected a name at {position}"),
+        LexerErrorTypes::Expects_Type => format!("Expected a type at {position}"),
+    }
 }
 
 #[derive(Debug)]
 pub struct LexerError {
-    pub errors: Vec<LexerErrorTypes>,
-    pub open_curly_indexes: Vec<usize>,
-    pub open_square_indexes: Vec<usize>,
-    pub open_bracket_indexes: Vec<usize>,
+    pub errors: Vec<String>,    
+    pub open_curly_indexes: Vec<Token>,
+    pub open_square_indexes: Vec<Token>,
+    pub open_bracket_indexes: Vec<Token>,
 }
 
 impl LexerError {
@@ -46,7 +42,7 @@ impl LexerError {
         }
     }
 
-    pub fn add_error(&mut self, error: LexerErrorTypes) {    
+    pub fn add_error(&mut self, error: String) {    
         self.errors.push(error);
     }
 
@@ -54,98 +50,39 @@ impl LexerError {
         self.errors.len() > 0
     }
 
-    pub fn print_errors(&self, lexer: &Lexer) {
+    pub fn print_errors(&self) {
         println!("\n\nERRORS: ");
 
-        self.errors.iter().for_each(|error| {
-            match error {
-                LexerErrorTypes::Match_Not_Found{ value, index} => {
-                    let token = lexer.get_token_at(index);
-                    println!("Invalid token '{}' {}", value, token.get_position());
-                }
-
-                LexerErrorTypes::Colon_Expected(index) => {
-                    let token = lexer.get_token_at(index);
-                    println!("Expected ':' {}", token.get_position());
-                }
-                LexerErrorTypes::Open_Curly_Expected(index) => {
-                    let token = lexer.get_token_at(index);
-                    println!("Expected '{{' {}", token.get_position());
-                }
-                LexerErrorTypes::Colon_Or_Close_Bracket_Expected(index) => {
-                    let token = lexer.get_token_at(index);
-                    println!("Expected ')' or ',' {}", token.get_position());
-                }
-
-                LexerErrorTypes::Struct_Expects_Symbol_Ahead(index) => {
-                    let token = lexer.get_token_at(index);
-                    println!("Expected a symbol ahead of keyword STRUCT {}", token.get_position());
-                }
-                LexerErrorTypes::Struct_Expects_End_Statement_Behind(index) => {
-                    let token = lexer.get_token_at(index);
-                    println!("Expected a ';' or '}}' behind keyword STRUCT {}", token.get_position());
-                }
-                LexerErrorTypes::Struct_Name_Expects_Open_Curly_In_Front(index) => {
-                    let token = lexer.get_token_at(index);
-                    let token_string = token.get_value().as_string().unwrap();
-                    println!("Expected a '{{' ahead of {} {}", token_string, token.get_position());
-                }
-
-                LexerErrorTypes::Expected_Type_For_Parameter(index) => {
-                    let token = lexer.get_token_at(index);
-                    println!("Expected a TYPE for parameter {}", token.get_position());
-                }
-                LexerErrorTypes::Function_Expects_Symbol_Ahead(index) => {
-                    let token = lexer.get_token_at(index);
-                    println!("Expected a symbol ahead of keyword FUNC {}", token.get_position());
-                }
-                LexerErrorTypes::Function_Expects_End_Statement_Behind(index) => {
-                    let token = lexer.get_token_at(index);
-                    println!("Expected a ';' or '}}' behind keyword FUNC {}", token.get_position());
-                }
-                LexerErrorTypes::Function_Name_Expects_Open_Bracket_In_Front(index) => {
-                    let token = lexer.get_token_at(index);
-                    let token_string = token.get_value().as_string().unwrap();
-                    println!("Expected a '(' ahead of function name '{}' {}", token_string, token.get_position());
-                }
-                LexerErrorTypes::Function_Expects_Symbol_As_Its_Parameter(index) => {
-                    let token = lexer.get_token_at(index);
-                    println!("Function parameter should be a SYMBOL {}", token.get_position());
-                }
-
-                LexerErrorTypes::Opened_Grouping_That_Was_Never_Closed(index) => {
-                    let token = lexer.get_token_at(index);
-                    println!("'{}' {} was never closed", token.get_token(), token.get_position());
-                }
-                LexerErrorTypes::Closed_Grouping_That_Was_Never_Opened(index) => {
-                    let token = lexer.get_token_at(index);
-                    println!("'{}' {} was never opened", token.get_token(), token.get_position());
-                }
-
-                LexerErrorTypes::Started_String_That_Was_Never_Ended(position) => {
-                    println!("You started a string {} but did not close it", position);
-                }
-            }
-        });
+        for error in self.errors.iter() {
+            println!("{error}");
+        }
     }
 }
 
 
 #[allow(non_camel_case_types)]
 #[derive(Debug)]
-pub enum ParserErrorTypes{
-    Expected_Token {
-        expected_token: Token,
-        found_token: Token,
-        position: Position
-    },
+pub enum ParserErrorTypes<'a>{
+    Expects_Name,
 
-    Random,
+    Expects_Token(&'a str),
+
+    Expects_Stmt_Fn,
+}
+
+impl <'a>ParserErrorTypes<'a> {
+    fn as_string(&self, position: Position) -> String {
+        match *self {
+            ParserErrorTypes::Expects_Name => format!("Expected a name at {position}"),
+            ParserErrorTypes::Expects_Token(token) => format!("Expected '{token}' at {position}"),
+            ParserErrorTypes::Expects_Stmt_Fn => format!("Expected a stmt fn at {position}"),
+        }
+    }
 }
 
 #[derive(Debug)]
 pub struct ParserError {
-    pub errors: Vec<ParserErrorTypes>
+    pub errors: Vec<String>
 }
 
 impl ParserError {
@@ -153,7 +90,15 @@ impl ParserError {
         Self { errors: Vec::new() }
     }
 
-    pub fn add_error(&mut self, error: ParserErrorTypes) {
-        self.errors.push(error);
+    pub fn add_error(&mut self, error: ParserErrorTypes, position: Position) {
+        self.errors.push(error.as_string(position));
+    }
+
+    pub fn print_errors(&self) {
+        println!("\n\nERRORS: ");
+
+        for error in self.errors.iter() {
+            println!("{error}");
+        }
     }
 }

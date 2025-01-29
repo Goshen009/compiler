@@ -12,7 +12,7 @@
 use super::Parser;
 use crate::StatementEnum;
 
-pub type StmtHandler = fn(&mut Parser) -> StatementEnum;
+
 
 // pub fn parse_statement(parser: &mut Parser) -> Result<StatementEnum, ()> {
 //     let stmt_fn = parser.get_current_token().stmt();

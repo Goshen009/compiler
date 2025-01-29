@@ -23,8 +23,11 @@ pub struct Pattern {
     pub handler: fn (TokenObject, String) -> TokenObject,
 }
 
-pub const PATTERNS: [Pattern; 33] = [
-    Pattern { pattern: r"^(\s+)", handler: default_handler, token: Token::SPACE },
+// the ordering of the patterns is important, DO NOT CHANGE IT!
+pub const PATTERNS: [Pattern; 34] = [
+    Pattern { pattern: r"^(\r?\n)", handler: default_handler, token: Token::NEW_LINE },
+
+    Pattern { pattern: r"^([^\S\r\n]+)", handler: default_handler, token: Token::SPACE },
     Pattern { pattern: r"^(\/\/)", handler: default_handler, token: Token::COMMENT },
 
     Pattern { pattern: r"^([a-zA-Z_][a-zA-Z0-9_]*)", handler: symbol_or_keyword_handler, token: Token::SYMBOL },

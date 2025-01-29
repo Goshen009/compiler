@@ -1,5 +1,49 @@
 
 
+# Welcome to my React Markdown Previewer!
+
+## This is a sub-heading...
+### And here's some other cool stuff:
+
+Heres some code, `<div></div>`, between 2 backticks.
+
+```
+// this is multi-line code:
+
+function anotherExample(firstLine, lastLine) {
+  if (firstLine == '```' && lastLine == '```') {
+    return multiLineCode;
+  }
+}
+```
+
+You can also make text **bold**... whoa!
+Or _italic_.
+Or... wait for it... **_both!_**
+And feel free to go crazy ~~crossing stuff out~~.
+
+There's also [links](https://github.com/MrNaturi), and
+> Block Quotes!
+
+And if you want to get really crazy, even tables:
+
+Wild Header | Crazy Header | Another Header?
+------------ | ------------- | -------------
+Your content can | be here, and it | can be here....
+And here. | Okay. | I think we get it.
+
+- And of course there are lists.
+  - Some are bulleted.
+     - With different indentation levels.
+        - That look like this.
+
+
+1. And there are numbered lists too.
+1. Use just 1s if you want!
+1. And last but not least, let's not forget embedded images:
+
+![practiceImage](https://imgs.search.brave.com/3uQtr9jUhG1Mp_ex57zejlu1afEEmry9agUnFZyVong/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly90My5m/dGNkbi5uZXQvanBn/LzA5LzgwLzA0LzI0/LzM2MF9GXzk4MDA0/MjQ2N19TbEJZcjJG/aVplZXNXcnJwa1d4/VmxpM3U2MUNuMFE3/NS5qcGc)
+
 
 
 
