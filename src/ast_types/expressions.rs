@@ -11,7 +11,7 @@ pub enum ExpressionEnum {
     Array(Box<ArrayExpression>),
     Binary(Box<BinaryExpression>),
     Prefix(Box<PrefixExpression>),
-    Assignment(Box<AssignmentExpression>),
+    // Assignment(Box<AssignmentExpression>),
     TupleAssignment(Box<TupleAssignmentExpression>),
     StructAssignment(Box<StructAssignmentExpression>),
     FunctionCall(Box<FunctionCallExpression>), // this will work out as an expression statement(). in the place where it get's the stmt_type. do it such that if it's a symbol it checks the next token to see if it's an open brackets. if it is return a null.

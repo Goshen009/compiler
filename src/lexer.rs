@@ -1,23 +1,11 @@
 use regex::Regex;
-use super::errorq::LexerErrorTypes;
 
 pub mod tokens;
 pub mod objects;
 mod patterns;
-mod handlers;
 
 use tokens::*;
 use objects::*;
-
-pub fn lex(src_code: String) {
-    let mut lexer = Lexer::new();
-
-    lex_tokens(&mut lexer, src_code);
-
-    if lexer.completed_without_errors() { // moves on to the parser
-        // super::parse((lexer.tokens, lexer.errors));
-    }
-}
 
 fn lex_tokens(lexer: &mut Lexer, mut src_code: String) {
     if src_code.is_empty() { // there's nothing left in the source code.
@@ -79,7 +67,7 @@ fn lex_tokens(lexer: &mut Lexer, mut src_code: String) {
         lexer.curr_position.column += foreign_word.len();
         
         let error = format!("Invalid token '{foreign_word}' at {}", lexer.curr_position);
-        lexer.errors.add_error(error);
+        lexer.add_error(error);
     }
 
     lex_tokens(lexer, src_code);
@@ -108,7 +96,7 @@ fn handle_string(lexer: &mut Lexer, mut src_code: String, start_position: Positi
     match closing_quotes_index {
         None => {
             let error = format!("Started a string at {start_position} that was never ended");
-            lexer.errors.add_error(error);
+            lexer.add_error(error);
             return String::new(); // returning a new string will make the lex() to try and get a new line. When it fails to, it'll call EOF and then the errors will print.
         }
 
@@ -118,7 +106,13 @@ fn handle_string(lexer: &mut Lexer, mut src_code: String, start_position: Positi
 
             // to update the position of the lexer
             let mut lines = matched_sentence.lines().rev();
-            let column_count = lines.next().unwrap().len() + 1; // plus 1 for the last " character. or else the position will be off by one.
+            let next = lines.next();
+
+            let mut column_count = 1;
+            if next != None {
+                column_count = next.unwrap().len() + 1; // plus 1 for the last " character. or else the position will be off by one.
+            }
+            
             let line_count = lines.count();
 
             let mut token_object = TokenObject::new(Token::STRING, start_position);

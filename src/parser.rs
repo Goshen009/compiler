@@ -1,96 +1,93 @@
-use crate::{ast_types::*, ParserError, ParserErrorTypes, Position};
-use std::collections::{HashMap, VecDeque};
-use crate::lexer::tokens::{Token, TokenStruct, TokenValue, BindingPower};
+use std::collections::VecDeque;
+use super::{semantics::objects::Scope, errorq::*, ast_types::*, lexer::{tokens::*, objects::*}};
 
-pub use statements_parser::*;
-pub use expressions_parser::*;
-pub use types_parser::*;
+mod handlers;
+mod statement_parser;
+mod experssion_parser;
+mod type_parser;
 
-pub mod statements_parser;
-pub mod expressions_parser;
-pub mod types_parser;
+use statement_parser::*;
+use experssion_parser::*;
+use type_parser::*;
 
-pub type StmtHandler = fn(&mut Parser) -> Vec<StatementEnum>;
-pub type NudHandler = fn(&mut Parser) -> ExpressionEnum;
-pub type LedHandler = fn(&mut Parser, ExpressionEnum, BindingPower) -> ExpressionEnum;
-pub type TypeNudHandler = fn(&mut Parser) -> TypesEnum;
+pub fn parse<'scope>(parser: &mut Parser, program: &mut Program, mut log_error: bool) -> Scope<'scope> {
+    parser.advance(); // to remove the Token::START
 
-pub struct Parser {
-    pub tokens: VecDeque<TokenStruct>,
-    pub errors: ParserError
-}
+    let mut global_scope = Scope::new(None);
 
-impl Parser {
-    pub fn get_current_token(&self) -> Token {
-        self.tokens[0].get_token()
-    }
+    while parser.has_tokens() {
+        let result = parse_statement(parser, log_error);
+        log_error = result.is_some(); // we don't want to keep logging errors if the next token is not a statement token, so when it hits a wrong token, it'll log an error for just that one and search for the next stmt token.
 
-    pub fn get_current_token_position(&self) -> Position {
-        Position { line: self.tokens[0].line, column: self.tokens[0].column }
-    }
+        if result.is_some() {
+            let stmt = result.unwrap();
 
-    pub fn get_next_token(&self) -> Token {
-        if self.tokens.len() >= 2 {
-            self.tokens[1].get_token()
-        } else {
-            panic!("No more tokens!")
-        }        
-    }
-
-    pub fn has_token(&self) -> bool {
-        self.get_current_token() != Token::EOF
-    }
-
-    pub fn advance(&mut self) -> TokenStruct {
-        self.tokens.pop_front().unwrap()
-    }
-
-    pub fn expect_error(&mut self, expected_token: Token, err_msg: &str) -> TokenStruct {
-        let token = self.get_current_token();
-        if token != expected_token {
-            panic!("{}", err_msg);
-        }
-
-        self.advance()
-    }
-
-    pub fn expect(&mut self, expected_token: Token) -> TokenStruct {
-        let err_msg = format!("Expected a {:?} but found {:?}", expected_token, self.get_current_token());
-        self.expect_error(expected_token, &err_msg)
-    }
-}
-
-pub fn parse(tokens: VecDeque<TokenStruct>) -> Program {
-    let mut program = Program {
-        code: Vec::new()
-    };
-
-    let mut parser = Parser {
-        tokens,
-        errors: ParserError::new()
-    };
-
-    while parser.has_token() {
-        // code.push(parse_statement(&mut parser));
-        for statement in parse_statement(&mut parser) {
-            program.code.push(statement);
+            stmt.add_to_global_scope(&mut global_scope, parser); // this will add the error of another variable has the same name to the parser errors.
+            program.add_statement(stmt);
         }
     }
 
-    println!("\n{:#?}", program);
-    return program;
+    return global_scope;
 }
 
-fn get_name_from_symbol(token_value: TokenValue) -> String {
+pub fn get_name_from_symbol(token_value: TokenValue) -> String {
     match token_value {
         TokenValue::String(val) => val,
         _ => panic!("What sort of sorcery is this?!")
     }
 }
 
-pub fn expect_comma(parser: &mut Parser) {
-    let is_final_iteration = parser.get_current_token() == Token::CLOSE_BRACKET;
-    if !is_final_iteration {
-        parser.expect_error(Token::COMMA, "FOOL! You forgot the comma at the end!");
+pub struct Parser {
+    pub errors: ParserError,
+    tokens: VecDeque<TokenObject>,
+}
+
+impl Parser {
+    pub fn new(lexer: Lexer) -> Self {
+        Self {
+            tokens: lexer.tokens,
+            errors: ParserError::new(),
+        }
+    }
+
+    fn has_tokens(&self) -> bool {
+        self.get_current_token() != Token::EOF
+    }
+
+    fn get_current_token(&self) -> Token {
+        if self.tokens.len() == 0 {
+            return Token::EOF;
+        } else {
+           return self.tokens[0].get_token();
+        }
+    }
+
+    fn advance(&mut self) -> TokenObject {
+        self.tokens.pop_front().unwrap()
+    }
+
+    fn log_error(&mut self, error: &str) -> Option<()> {
+        self.errors.add_error(format!("{}", error));
+        return None;
+    }
+
+    fn expect(&mut self, expected_token: Token, error: &str) -> Option<TokenObject> {
+        let curr_token = self.advance();        
+        if curr_token.get_token() != expected_token {
+            self.errors.add_error(format!("{} at {}", error, curr_token.get_position()));
+            return None;
+        }
+
+        return Some(curr_token);
+    }
+
+    pub fn completed_without_errors(&self, program: &Program) -> bool {
+        if self.errors.has_errors() {
+            self.errors.print_errors();
+            return false;
+        }
+
+        println!("\n{:#?}", program);
+        return true;
     }
 }

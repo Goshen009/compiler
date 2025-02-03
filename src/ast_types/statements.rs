@@ -3,17 +3,17 @@ use super::{ExpressionEnum, TypesEnum};
 
 #[derive(Debug, PartialEq)]
 pub enum StatementEnum {
-    Block(Box<BlockStatement>),
-    Expression(Box<ExpressionStatement>),
+    // Block(Box<BlockStatement>),
+    // Expression(Box<ExpressionStatement>),
     VariableDeclaration(Box<VariableDeclarationStatement>),
     TupleDeclaration(Box<TupleDeclarationStatement>),
     StructDeclaration(Box<StructDeclarationStatement>),
     FunctionDeclaration(Box<FunctionDeclarationStatement>),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Default)]
 pub struct BlockStatement {
-    pub body: Vec<StatementEnum>
+    pub body: Vec<StatementEnum>,
 }
 
 #[derive(Debug, PartialEq)]

@@ -1,0 +1,46 @@
+
+
+
+
+
+
+
+let a: String = "90";
+let b: String = a;
+
+let c: []Number = [90, 90];
+
+let d: Number = (90 + 2) * 90;
+
+let e: Number = -90;
+let f: Number = -e;
+
+let g: (Number, String) = (90, "Hallo");
+
+struct main {
+    field1: Number,
+}
+
+let h: main = main {
+    field1: 90,
+};
+
+let (x: Number, v: main) = (90, q);
+
+let (j: main, qr: String) = add("String", h);
+
+
+let y: Number = y;
+
+
+
+monk add(p: String, r: main) -> (main, String) {
+    struct main2 {
+        field1: Number,
+    }
+
+    let z: String = p;
+    let wv: String = z;
+}
+
+let oop: String = qr;

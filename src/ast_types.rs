@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use super::tokens::Token;
+use super::lexer::tokens::Token;
 
 pub mod program;
 pub mod statements;
@@ -67,15 +67,15 @@ pub fn return_prefix_expression(sign: Token, right_hand: ExpressionEnum) -> Expr
     ))
 }
 
-pub fn return_assignment_expression(left: ExpressionEnum, operator_kind: Token, right: ExpressionEnum) -> ExpressionEnum {
-    ExpressionEnum::Assignment(Box::new(
-        AssignmentExpression {
-            left,
-            operator_kind,
-            right
-        }
-    ))
-}
+// pub fn return_assignment_expression(left: ExpressionEnum, operator_kind: Token, right: ExpressionEnum) -> ExpressionEnum {
+//     ExpressionEnum::Assignment(Box::new(
+//         AssignmentExpression {
+//             left,
+//             operator_kind,
+//             right
+//         }
+//     ))
+// }
 
 pub fn return_tuple_assignment_expression(tuple: Vec<ExpressionEnum>) -> ExpressionEnum {
     ExpressionEnum::TupleAssignment(Box::new(
@@ -104,13 +104,13 @@ pub fn return_function_call_expression(function_name: String, function_argument:
 }
 
 
-pub fn return_expression_statement(expression: ExpressionEnum) -> StatementEnum {
-    StatementEnum::Expression(Box::new(
-        ExpressionStatement {
-            expression,
-        }
-    ))
-}
+// pub fn return_expression_statement(expression: ExpressionEnum) -> StatementEnum {
+//     StatementEnum::Expression(Box::new(
+//         ExpressionStatement {
+//             expression,
+//         }
+//     ))
+// }
 
 pub fn return_variable_declaration_statement(variable_name: String, is_constant: bool, value: ExpressionEnum, explicit_type: TypesEnum) -> StatementEnum {
     StatementEnum::VariableDeclaration(Box::new(
@@ -153,10 +153,10 @@ pub fn return_function_declaration_statement(function_name: String, function_par
     ))
 }
 
-pub fn return_primary_type(type_: Types) -> TypesEnum {
+pub fn return_primary_type(typeq: Types) -> TypesEnum {
     TypesEnum::Primary(
         PrimaryType {
-            type_,
+            typeq,
         }
     )
 }

@@ -1,30 +1,18 @@
-
-
-
-
-
-
-
-
-
-
-use super::StatementEnum;
-
+use super::{BlockStatement, StatementEnum};
 
 #[derive(Debug, PartialEq)]
 pub struct Program {
-    pub code: Vec<StatementEnum>
+    pub code: BlockStatement
 }
 
 impl Program {
     pub fn new() -> Self {
         Self {
-            code: Vec::new()
+            code: BlockStatement::default()
         }
     }
 
     pub fn add_statement(&mut self, global_statement: StatementEnum) {
-        // statements added directly to the program are global statements
-        self.code.push(global_statement);
+        self.code.body.push(global_statement); // statements added directly to the program are global statements
     }
 }

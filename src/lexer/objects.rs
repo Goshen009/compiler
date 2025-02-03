@@ -1,5 +1,4 @@
 use std::collections::VecDeque;
-use crate::errorq::LexerError;
 use super::{Token, TokenObject};
 
 #[derive(Debug, Copy, Clone)]
@@ -33,53 +32,54 @@ impl std::fmt::Display for Position {
     }
 }
 
-pub struct Lexer { // I won't be passing this on. Only the VecDeque<> and Errors
-    pub errors: LexerError,
+pub struct Lexer {
+    errors: Vec<String>,
     pub curr_position: Position,
-    pub tokens: VecDeque<TokenObject>,    
+    pub tokens: VecDeque<TokenObject>,
 }
 
 impl Lexer {
-    pub fn new() -> Self { 
-        let new_lexer = Self {
+    pub fn new(src_code: String) -> Self { 
+        let mut lexer = Self {
             tokens: VecDeque::from(vec![TokenObject::new(Token::START, Position::new())]),
-            errors: LexerError::new(),
+            errors: Vec::new(),
             curr_position: Position::new()
         };
 
-        // new_lexer.tokens[0].print_self();
-        return new_lexer;
+        lexer.tokens[0].print_self();
+        
+        super::lex_tokens(&mut lexer, src_code);
+        return lexer;
     }
 
-    pub fn get_token_at(&self, index: &usize) -> &TokenObject {
-        return self.tokens.get(*index).unwrap();
+    pub fn add_error(&mut self, error: String) {    
+        self.errors.push(error);
     }
 
-    pub fn get_current_index(&self) -> usize {
-        return self.tokens.len() - 1;
+    pub fn has_errors(&self) -> bool {
+        self.errors.len() > 0
     }
 
     pub fn add_token(&mut self, mut token: TokenObject) {
         if token.get_token() == Token::SPACE {
-            return; // SPACE tokens should not be in the tokens list.
-        }
-
-        if !self.tokens.is_empty() { 
-            super::handlers::check_token_syntax(&mut token, self);
+            return;
         }
 
         token.print_self();
         self.tokens.push_back(token);
     }
 
-    pub fn completed_without_errors(&mut self) -> bool {
-        // super::handlers::check_grouping_at_EOF(self);
-
-        if self.errors.has_errors() {
-            self.errors.print_errors();
-            return false;
+    pub fn print_errors(&self) {
+        println!("\nERRORS: ");
+        for error in self.errors.iter() {
+            println!("{error}");
         }
+    }
 
-        return true;
+    pub fn completed_without_errors(&self) -> bool {
+        if self.has_errors() {
+            self.print_errors();
+        }
+        return !self.has_errors();
     }
 }

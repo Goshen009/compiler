@@ -6,13 +6,15 @@ pub struct Keyword {
     pub token: Token
 }
 
-pub const KEYWORDS: [Keyword; 6] = [
+pub const KEYWORDS: [Keyword; 8] = [
     Keyword { pattern: r"^(let)\b", token: Token::LET },
     Keyword { pattern: r"^(const)\b", token: Token::CONST },
     Keyword { pattern: r"^(return)\b", token: Token::RETURN },
     Keyword { pattern: r"^(scream)\b", token: Token::SCREAM },
     Keyword { pattern: r"^(struct)\b", token: Token::STRUCT },
     Keyword { pattern: r"^(monk)\b", token: Token::MONK },
+    Keyword { pattern: r"^(if)\b", token: Token::IF },
+    Keyword { pattern: r"^(else)\b", token: Token::ELSE },
 ];
 
 

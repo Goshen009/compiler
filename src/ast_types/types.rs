@@ -9,7 +9,7 @@ pub enum TypesEnum {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct PrimaryType {
-    pub type_: Types,
+    pub typeq: Types,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -30,10 +30,10 @@ pub struct TupleType {
 // But because Strings in Enums have proven to be a hard thing (to compare)
 // I'll hash the name of the user-defined type and store that as it's name.
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 #[allow(non_camel_case_types)]
 pub enum Types {
-    User_Defined(u64),
+    User_Defined(String),
     Number,
     String,
 }

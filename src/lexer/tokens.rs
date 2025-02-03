@@ -3,16 +3,16 @@ use super::Position;
 #[derive(Clone)]
 pub struct TokenObject {
     token: Token,
-    value: Option<TokenValue>, // i'm using option because i want to move out of it
     position: Position,
+    value: Option<TokenValue>, // i'm using option because i want to move out of it
 }
 
 impl TokenObject {
     pub fn new(token: Token, position: Position) -> Self {
         Self {
             token,
-            value: Some(TokenValue::None),
             position,
+            value: Some(TokenValue::None),
         }
     }
 
@@ -31,10 +31,6 @@ impl TokenObject {
         self.value = Some(value);
     }
 
-    pub fn update_token(&mut self, token: Token) {
-        self.token = token;
-    }
-
     pub fn get_token(&self) -> Token {
         self.token
     }
@@ -44,24 +40,18 @@ impl TokenObject {
     }
 
     pub fn take_value(&mut self) -> TokenValue {
-        self.value.take().unwrap()
+        let curr_value = self.value.take().unwrap();
+        self.update_token_value(TokenValue::None); // just to make sure that Token Value is never None
+
+        curr_value
     }
 }
 
 #[derive(Clone)]
 pub enum TokenValue {
     String(String),
-    Number(i64),
+    Number(i32),
     None,
-}
-
-impl TokenValue {
-    pub fn as_string(&self) -> Option<&String> {
-        match self {
-            TokenValue::String(val) => Some(val),
-            _ => None
-        }
-    }
 }
 
 #[allow(non_camel_case_types)]
@@ -70,17 +60,6 @@ pub enum Token {
     STRING,         // string
     SYMBOL,         // var_names
     NUMBER,         // integer number
-
-    FUNCTION_NAME,
-    FUNCTION_PARAMETER,
-    FUNCTION_OPEN_CURLY,
-    FUNCTION_RETURN_TYPE,
-    FUNCTION_OPEN_BRACKETS,
-    FUNCTION_PARAMETER_TYPE,
-    FUNCTION_RETURN_OPEN_BRACKETS,
-
-    STRUCT_NAME,
-    STRUCT_FIELD,
 
     PLUS_ASSIGN,    // +=
     MINUS_ASSIGN,   // -=
@@ -135,79 +114,37 @@ pub enum Token {
     EOF,
 }
 
-type TokenSyntaxHandler = fn(Token, &mut TokenObject, &mut super::Lexer);
-
 impl Token {
-    pub const fn as_u8(self) -> u8 {
-        self as u8
-    }
-
-    pub const fn get_syntax_check_handler(&self) -> Option<TokenSyntaxHandler> {
+    pub fn as_expect_error(&self) -> String {
         match *self {
-            Token::START | Token::ERROR => None,
-
-            // Token::STRUCT => Some(struct_statement_handlers::struct_syntax_check),
-            // Token::STRUCT_NAME => Some(struct_statement_handlers::struct_name_syntax_check),
-
-            // Token::MONK => Some(function_statement_handlers::function_decl_syntax_check),
-            // Token::FUNCTION_NAME => Some(function_statement_handlers::function_name_syntax_check),
-            // Token::FUNCTION_PARAMETER => Some(function_statement_handlers::function_parameter_syntax_check),
-            // Token::FUNCTION_PARAMETER_TYPE => Some(function_statement_handlers::function_parameter_type_syntax_check),
-
-            // Token::OPEN_CURLY => Some(open_curly_syntax_check),
-            // Token::OPEN_BRACKET => Some(open_bracket_syntax_check),
-
-            // Token::COLON => Some(colon_syntax_check),
-            // Token::COMMA => Some(comma_syntax_check),
-
-            _ => None,
-        }
-    }
-
-    pub const fn is_grouping_open(&self) -> bool {
-        match self {
-            Token::OPEN_BRACKET | Token:: OPEN_CURLY | Token::OPEN_SQUARE | Token::FUNCTION_OPEN_BRACKETS => true,
-            _ => false
-        }
-    }
-
-    pub const fn is_grouping_close(&self) -> bool {
-        match self {
-            Token::CLOSE_BRACKET | Token::CLOSE_CURLY | Token::CLOSE_SQUARE => true,
-            _ => false
-        }
-    }
-
-    pub const fn can_start_new_statement(&self) -> bool {
-        match self {
-            Token::START | Token::OPEN_CURLY | Token::CLOSE_CURLY | Token::SEMICOLON => true,
-            _ => false
-        }
-    }
-
-    // pub const fn is_start_statementss(&self) -> bool {
-    //     match self {
-    //         Token::LET | Token::SYMBOL | Token::STRUCT | Token::MONK => true,
-    //         Token::CONST | Token::RETURN | Token::SCREAM | Token::IF | Token::ELSE => true,
-    //         _ => false
-    //     }
-    // }
-}
-
-impl std::fmt::Display for Token {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Token::OPEN_BRACKET => write!(f, "("),
-            Token::OPEN_CURLY => write!(f, "{{"),
-            Token::OPEN_SQUARE => write!(f, "["),
-
-            Token::CLOSE_BRACKET => write!(f, ")"),
-            Token::CLOSE_CURLY => write!(f, "}}"),
-            Token::CLOSE_SQUARE => write!(f, "]"),
-
-            Token::DOUBLE_QUOTE => write!(f, "\""),
-
-            _ => write!(f, ""),
+            Token::OPEN_CURLY => format!("Expects '{{'"),
+            Token::CLOSE_CURLY => format!("Expects '}}'"),
+            Token::OPEN_BRACKET => format!("Expects '('"),
+            Token::CLOSE_BRACKET => format!("Expects ')'"),
+            Token::CLOSE_SQUARE => format!("Expects ']'"),
+            Token::COLON => format!("Expects ':'"),
+            Token::SEMICOLON => format!("Expects ';'"),
+            Token::COMMA => format!("Expects ','"),
+            Token::ASSIGN => format!("Expects '='"),
+            _ => format!("")
         }
     }
 }
+
+// impl std::fmt::Display for Token {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         match self {
+//             Token::OPEN_BRACKET => write!(f, "("),
+//             Token::OPEN_CURLY => write!(f, "{{"),
+//             Token::OPEN_SQUARE => write!(f, "["),
+
+//             Token::CLOSE_BRACKET => write!(f, ")"),
+//             Token::CLOSE_CURLY => write!(f, "}}"),
+//             Token::CLOSE_SQUARE => write!(f, "]"),
+
+//             Token::DOUBLE_QUOTE => write!(f, "\""),
+
+//             _ => write!(f, ""),
+//         }
+//     }
+// }
