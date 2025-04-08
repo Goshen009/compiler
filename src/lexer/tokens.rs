@@ -1,150 +1,199 @@
-use super::Position;
+use super::objects::Position;
+use logos::{Lexer, Logos, Skip};
+use regex::Regex;
 
-#[derive(Clone)]
-pub struct TokenObject {
-    token: Token,
-    position: Position,
-    value: Option<TokenValue>, // i'm using option because i want to move out of it
-}
-
-impl TokenObject {
-    pub fn new(token: Token, position: Position) -> Self {
-        Self {
-            token,
-            position,
-            value: Some(TokenValue::None),
-        }
-    }
-
-    pub fn print_self(&mut self) { // moves out of token value, does the checks and moves back in.
-        let token_value = self.take_value();
-        match &token_value {
-            TokenValue::None => println!("{:<35} {}", format!("{:?}", self.get_token()), self.get_position()),
-            TokenValue::Number(val) => println!("{:<35} {}", format!("{:?}({})", self.get_token(), val), self.get_position()),
-            TokenValue::String(val) => println!("{:<35} {}", format!("{:?}({})", self.get_token(), val), self.get_position()),
-        }
-
-        self.update_token_value(token_value);
-    }
-
-    pub fn update_token_value(&mut self, value: TokenValue) {
-        self.value = Some(value);
-    }
-
-    pub fn get_token(&self) -> Token {
-        self.token
-    }
-
-    pub fn get_position(&self) -> Position {
-        self.position
-    }
-
-    pub fn take_value(&mut self) -> TokenValue {
-        let curr_value = self.value.take().unwrap();
-        self.update_token_value(TokenValue::None); // just to make sure that Token Value is never None
-
-        curr_value
-    }
-}
-
-#[derive(Clone)]
-pub enum TokenValue {
-    String(String),
-    Number(i32),
-    None,
+#[derive(Default)]
+pub struct LexerState {
+    pub position: Position,
+    pub value: String,
+    last_new_line_position: usize,
+    next_line: usize
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Logos, Copy, Clone, PartialEq, Eq, Hash)]
+#[logos(extras = LexerState)]
 pub enum Token {
-    STRING,         // string
-    SYMBOL,         // var_names
-    NUMBER,         // integer number
-
-    PLUS_ASSIGN,    // +=
-    MINUS_ASSIGN,   // -=
-
-    DASH_GREATER,   // ->
-
-    AND,            // &&
-    OR,             // ||
+    #[regex(r#""[^"]*""#, handle_string)]
+    STRING,
+    // it remains the handler and the errors for invalid strings
+    // if it does not close, then it'll be an error token that consumes the 
+    // rest of the src_code
     
-    GREATER_EQUALS, // >=
-    LESS_EQUALS,    // <=
-    NOT_EQUALS,     // !=
-    EQUALS,         // ==
-    GREATER,        // >
-    LESS,           // <
-    
-    OPEN_BRACKET,   // (
-    CLOSE_BRACKET,  // )
-    OPEN_CURLY,     // {
-    CLOSE_CURLY,    // }
-    OPEN_SQUARE,    // [
-    CLOSE_SQUARE,   // ]
+    // #[regex(r"[a-zA-Z_][a-zA-Z0-9_]*", move_position)]
+    // SYMBOL, needs to have a handler that will get the symbol
 
-    DOUBLE_QUOTE,   // "
+    // #[regex(r"[0-9]+", move_position)]
+    // NUMBER, will require a callback that will add it's value
 
-    COMMA,          // ,
-    COLON,          // :
-    SEMICOLON,      // ;
-    NOT,            // !
-    MINUS,          // -
-    DIVIDE,         // /
-    ASSIGN,         // =
-    PLUS,           // +
-    STAR,           // *
-    PERCENT,        // %
-    PERIOD,         // .
+    // make the keywords have word boundaries.
+
+    #[token("//", handle_comment)]
+    COMMENT,
+
+    #[token("+=", move_position)]
+    PLUS_ASSIGN,
+
+    #[token("-=", move_position)]
+    MINUS_ASSIGN,
+
+    #[token("->", move_position)]
+    DASH_GREATER,
+
+    #[token("&&", move_position)]
+    AND,
     
+    #[token("||", move_position)]
+    OR,
+    
+    #[token(">=", move_position)]
+    GREATER_EQUALS,
+    
+    #[token("<=", move_position)]
+    LESS_EQUALS,
+    
+    #[token("!=", move_position)]
+    NOT_EQUALS,
+    
+    #[token("==", move_position)]
+    EQUALS,
+    
+    #[token(">", move_position)]    
+    GREATER,
+    
+    #[token("<", move_position)]
+    LESS,
+    
+    #[token("(", move_position)]
+    OPEN_BRACKET,
+
+    #[token(")", move_position)]
+    CLOSE_BRACKET,
+
+    #[token("{", move_position)]
+    OPEN_CURLY,
+
+    #[token("}", move_position)]
+    CLOSE_CURLY,
+
+    #[token("[", move_position)]
+    OPEN_SQUARE,
+
+    #[token("]", move_position)]
+    CLOSE_SQUARE,
+
+    #[token(",", move_position)]
+    COMMA,
+
+    #[token(":", move_position)]
+    COLON,
+
+    #[token(";", move_position)]
+    SEMICOLON,
+
+    #[token("!", move_position)]
+    NOT,
+
+    #[token("-", move_position)]
+    MINUS,
+
+    #[token("/", move_position)]
+    DIVIDE,
+
+    #[token("=", move_position)]
+    ASSIGN,
+
+    #[token("+", move_position)]
+    PLUS,
+
+    #[token("*", move_position)]
+    STAR,
+
+    #[token("%", move_position)]
+    PERCENT,
+
+    #[token(".", move_position)]
+    PERIOD,
+    
+    #[token("let", move_position)]
     LET,
+
+    #[token("const", move_position)]
     CONST,
+
+    #[token("return", move_position)]
     RETURN,
+
+    #[token("scream", move_position)]
     SCREAM,
+
+    #[token("struct", move_position)]
     STRUCT,
+
+    #[token("monk", move_position)]
     MONK,
+
+    #[token("if", move_position)]
     IF,
+
+    #[token("else", move_position)]
     ELSE,
 
-    START,
+    #[regex(r"[^\S\r\n]+", skip_space)]
     SPACE,
-    COMMENT,
+
+    #[regex(r"\r?\n", move_to_new_line)]
     NEW_LINE,
-    ERROR,
-    EOF,
 }
 
-impl Token {
-    pub fn as_expect_error(&self) -> String {
-        match *self {
-            Token::OPEN_CURLY => format!("Expects '{{'"),
-            Token::CLOSE_CURLY => format!("Expects '}}'"),
-            Token::OPEN_BRACKET => format!("Expects '('"),
-            Token::CLOSE_BRACKET => format!("Expects ')'"),
-            Token::CLOSE_SQUARE => format!("Expects ']'"),
-            Token::COLON => format!("Expects ':'"),
-            Token::SEMICOLON => format!("Expects ';'"),
-            Token::COMMA => format!("Expects ','"),
-            Token::ASSIGN => format!("Expects '='"),
-            _ => format!("")
-        }
+fn move_position(lexer: &mut Lexer<Token>) {
+    lexer.extras.position.line += lexer.extras.next_line;
+    lexer.extras.next_line = 0;
+    
+    lexer.extras.position.column = (lexer.span().start - lexer.extras.last_new_line_position) + 1;
+    lexer.extras.value = String::new();
+}
+
+fn skip_space(lexer: &mut Lexer<Token>) -> Skip {
+    move_position(lexer);
+    Skip
+}
+
+fn move_to_new_line(lexer: &mut Lexer<Token>) -> Skip {
+    lexer.extras.position.line += lexer.extras.next_line;
+    lexer.extras.next_line = 0;
+
+    lexer.extras.position.line += 1;
+    lexer.extras.position.column = 0;
+    lexer.extras.last_new_line_position = lexer.span().end;
+
+    Skip
+}
+
+fn handle_comment(lexer: &mut Lexer<Token>) -> Skip {
+    let regex = Regex::new(r"(\r?\n)").unwrap();
+
+    if let Some(mat) = regex.find(lexer.remainder()) {
+        let new_position = mat.start();
+        lexer.bump(new_position);
+    } else {
+        let new_position = lexer.remainder().len();
+        lexer.bump(new_position);
     }
+
+    Skip
 }
 
-// impl std::fmt::Display for Token {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//         match self {
-//             Token::OPEN_BRACKET => write!(f, "("),
-//             Token::OPEN_CURLY => write!(f, "{{"),
-//             Token::OPEN_SQUARE => write!(f, "["),
+fn handle_string(lexer: &mut Lexer<Token>) {
+    let regex = Regex::new(r"(\r?\n)").unwrap();
 
-//             Token::CLOSE_BRACKET => write!(f, ")"),
-//             Token::CLOSE_CURLY => write!(f, "}}"),
-//             Token::CLOSE_SQUARE => write!(f, "]"),
+    if let Some((index, last_match)) = regex.find_iter(lexer.slice()).enumerate().last() {
+        lexer.extras.next_line = index + 1;
+        lexer.extras.last_new_line_position = lexer.span().end + last_match.end();
+    }
+    
+    let slice = lexer.slice();
+    lexer.extras.value = slice[1..slice.len()-1].to_string();
 
-//             Token::DOUBLE_QUOTE => write!(f, "\""),
-
-//             _ => write!(f, ""),
-//         }
-//     }
-// }
+    lexer.extras.position.column = (lexer.span().start - lexer.extras.last_new_line_position) + 1;
+}

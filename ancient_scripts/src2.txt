@@ -1,0 +1,72 @@
+
+
+
+
+
+
+// testing struct
+struct main {
+  field1: Number,
+}
+
+struct main {
+  field2: String,
+  field3: Number
+}
+
+// testing function
+monk a() {
+
+}
+monk b(a1: Number) {
+
+}
+monk c(a1: Number, a2: Number) {
+
+}
+monk d() -> Number {
+
+}
+monk e() -> (Number, String) {
+
+}
+monk f() -> (Number) {
+
+}
+monk g() -> () {
+
+}
+
+// testing types
+let a: Number = 90;
+let b: []Number = 90;
+let c: () = ();
+let d: (Number) = 90; // should change back to just Number
+let e: (String, Number) = 90;
+let (f: Number) = (); // changes bact to a variable declaration
+const (g: UserDef, h: UserDef2) = ();
+
+// testing expressions
+let a: x = 90;
+let b: x = "Hallo";
+let c: x = Sym9bol;
+let d: x = [90, 9];
+let e: x = (9 * 5) + -4;
+let f: x = -90;
+let g: x = -(50 * 2);
+let h: x = (50, 5) ;
+let i: x = (50);  // switches directly to a primary type
+let j: x = ();
+let k: x = main {
+  
+};
+let l: x = main {
+  field1: Symbol
+};
+let m: x = main {
+  field1: 90,
+  field2: "type",
+};
+let n: x = main();
+let p: x = main(90);
+let q: x = main(90, symbol);

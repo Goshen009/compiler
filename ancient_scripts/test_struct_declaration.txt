@@ -1,0 +1,5 @@
+struct TestStruct {
+    field1: Number,
+    field2: UserDefined,
+    field3: []String
+}
